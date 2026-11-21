@@ -75,6 +75,10 @@ riesgo de dejar el anillo inservible sin acceso físico al chip.
 
 ## 7. Datos personales y publicación
 
+- Repo público: https://github.com/denniscasther/smartring-aif01
+- Página (GitHub Pages, rama main, raíz): https://denniscasther.github.io/smartring-aif01/
+- Decisión del dueño (2026-11-21): la página muestra **solo lo técnico**, sin sus lecturas de salud.
+
 - `private/` está en `.gitignore`: ahí van lecturas crudas e historial.
 - La web pública solo muestra hallazgos técnicos (protocolo, qué mide, cómo se hizo),
   sin la dirección BLE completa ni los valores de salud del dueño, salvo que él lo
