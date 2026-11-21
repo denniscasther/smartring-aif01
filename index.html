@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartRing AIF01 · Ingeniería inversa</title>
+<meta name="description" content="Cómo controlamos un smart ring genérico (SmartHealth / protocolo YCBT) desde una laptop por Bluetooth LE: hallazgos, protocolo y mediciones verificadas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#eef1f5; --text:#13161b; --muted:#5b6472;
+  --border:#dde2e9; --accent:#0f9d6a; --accent-soft:#dff5ec; --warn:#b26a00; --warn-soft:#fff1db;
+  --bad:#c23b3b; --bad-soft:#fde7e7; --code:#0b1220; --code-text:#d7e3f4;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c0f14; --surface:#141922; --surface-2:#1b222d; --text:#e8edf4; --muted:#9aa6b6;
+    --border:#263041; --accent:#34d399; --accent-soft:#11291f; --warn:#f5b454; --warn-soft:#2c2213;
+    --bad:#f28b8b; --bad-soft:#2d1717; --code:#070a10; --code-text:#d7e3f4;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c0f14; --surface:#141922; --surface-2:#1b222d; --text:#e8edf4; --muted:#9aa6b6;
+  --border:#263041; --accent:#34d399; --accent-soft:#11291f; --warn:#f5b454; --warn-soft:#2c2213;
+  --bad:#f28b8b; --bad-soft:#2d1717; --code:#070a10; --code-text:#d7e3f4;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 Inter,system-ui,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+header.hero{padding:56px 0 32px;border-bottom:1px solid var(--border)}
+.eyebrow{font:600 12px/1 "JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(28px,5vw,44px);line-height:1.15;margin:12px 0 12px;letter-spacing:-.02em}
+h2{font-size:24px;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-size:16px;margin:0 0 6px}
+p.lead{font-size:18px;color:var(--muted);max-width:720px;margin:0}
+.note{margin-top:18px;display:inline-block;background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:14px}
+section{padding:40px 0;border-bottom:1px solid var(--border)}
+.sub{color:var(--muted);margin:0 0 20px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.card .k{font:600 12px "JetBrains Mono",monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.card .v{font-size:20px;font-weight:700;margin-top:4px}
+.pill{display:inline-block;font:600 12px "JetBrains Mono",monospace;padding:3px 8px;border-radius:999px}
+.ok{background:var(--accent-soft);color:var(--accent)}
+.wait{background:var(--warn-soft);color:var(--warn)}
+.no{background:var(--bad-soft);color:var(--bad)}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font:600 12px "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--surface-2)}
+tr:last-child td{border-bottom:none}
+code,.mono{font-family:"JetBrains Mono",monospace;font-size:.9em}
+pre{background:var(--code);color:var(--code-text);border-radius:12px;padding:16px;overflow-x:auto;font:13px/1.6 "JetBrains Mono",monospace;margin:0}
+.frame{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0}
+.frame div{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:8px 10px;text-align:center;min-width:84px}
+.frame b{display:block;font:600 15px "JetBrains Mono",monospace}
+.frame span{font-size:12px;color:var(--muted)}
+.frame .crc{border-color:var(--accent)}
+.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.steps li{counter-increment:s;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px 14px 56px;position:relative}
+.steps li::before{content:counter(s);position:absolute;left:16px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font:700 13px/26px "JetBrains Mono",monospace;text-align:center}
+.steps li p{margin:0;color:var(--muted);font-size:14px}
+.cols{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:820px){.cols{grid-template-columns:1fr 1fr}}
+footer{padding:32px 0 48px;color:var(--muted);font-size:14px}
+a{color:var(--accent)}
+.theme-btn{position:fixed;top:12px;right:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:6px 12px;font:600 12px Inter,sans-serif;cursor:pointer}
+</style>
+</head>
+<body>
+<button class="theme-btn" id="themeBtn" type="button" aria-label="Cambiar tema">◐ Tema</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Proyecto experimental · Bluetooth LE · 2026</div>
+    <h1>Controlando un smart ring genérico sin su app</h1>
+    <p class="lead">Ingeniería inversa del anillo <b>AIF01</b> (app SmartHealth, protocolo <b>YCBT</b> de Yucheng): desde una laptop con Windows y Python leemos pulso, SpO2, presión estimada y temperatura, y configuramos el anillo, todo sin la app oficial y sin tocar el firmware.</p>
+    <div class="note">Las mediciones de un anillo de consumo no son diagnóstico médico. La presión arterial es una estimación óptica.</div>
+  </div>
+</header>
+
+<main>
+<section>
+  <div class="wrap">
+    <h2>Estado del proyecto</h2>
+    <p class="sub">Qué ya funciona y qué falta.</p>
+    <div class="grid">
+      <div class="card"><div class="k">Protocolo YCBT + CRC16</div><div class="v"><span class="pill ok">verificado</span></div></div>
+      <div class="card"><div class="k">Pulso en vivo</div><div class="v"><span class="pill ok">funciona</span></div></div>
+      <div class="card"><div class="k">SpO2 en vivo</div><div class="v"><span class="pill ok">funciona</span></div></div>
+      <div class="card"><div class="k">Presión (estimada)</div><div class="v"><span class="pill ok">funciona</span></div></div>
+      <div class="card"><div class="k">Temperatura</div><div class="v"><span class="pill ok">probable</span></div></div>
+      <div class="card"><div class="k">Hora + monitoreo auto</div><div class="v"><span class="pill ok">configurado</span></div></div>
+      <div class="card"><div class="k">Historial (sueño, pasos, HRV)</div><div class="v"><span class="pill wait">en curso</span></div></div>
+      <div class="card"><div class="k">Firmware propio</div><div class="v"><span class="pill no">descartado</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Cómo llegamos</h2>
+    <p class="sub">El camino, en orden.</p>
+    <ol class="steps">
+      <li><h3>El cable USB solo carga</h3><p>El cargador magnético tiene 2 pines: Windows no detecta ningún dispositivo. Toda la comunicación tenía que ser por Bluetooth LE.</p></li>
+      <li><h3>Escaneo BLE</h3><p>El anillo se anuncia como <code>AIF01 xxxx</code> con el servicio estándar de pulso (0x180D).</p></li>
+      <li><h3>Mapa de servicios GATT</h3><p>Aparece un servicio propietario <code>be940000-…</code>, Nordic UART y la firma del chip JieLi (<code>AE00</code>).</p></li>
+      <li><h3>La app delata el protocolo</h3><p>SmartHealth es de Yucheng → protocolo <b>YCBT</b>, ya parcialmente documentado por la comunidad (Gadgetbridge).</p></li>
+      <li><h3>Paquetes y CRC propios</h3><p>Implementamos el formato y el CRC16; el anillo acepta todos los comandos.</p></li>
+      <li><h3>La pieza que faltaba</h3><p>Sin el comando <code>0x0104 01</code> el LED verde nunca enciende. Con él: pulso en vivo.</p></li>
+      <li><h3>Probar cada tipo de medición</h3><p>Uno por uno en una sola conexión: tipo 0 pulso, 1 presión, 2 SpO2, 4 temperatura.</p></li>
+      <li><h3>El misterio del anillo "desaparecido"</h3><p>Windows se quedaba conectado al anillo y un anillo conectado no se anuncia. Solución: cliente WinRT que libera la conexión.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Formato de un paquete YCBT</h2>
+    <p class="sub">Ejemplo real: “iniciar medición de pulso”.</p>
+    <div class="frame" aria-label="Estructura del paquete">
+      <div><b>03</b><span>grupo</span></div>
+      <div><b>2F</b><span>clave</span></div>
+      <div><b>08 00</b><span>largo total</span></div>
+      <div><b>01 00</b><span>iniciar · tipo 0</span></div>
+      <div class="crc"><b>4F 1B</b><span>CRC16</span></div>
+    </div>
+<pre><code>def crc16_ycbt(data):
+    s = 0xFFFF
+    for x in data:
+        a = ((s &lt;&lt; 8) &amp; 0xFF00) | ((s &gt;&gt; 8) &amp; 0xFF)
+        b = (a ^ x) &amp; 0xFFFF
+        c = b ^ ((b &amp; 0xFF) &gt;&gt; 4)
+        d = (c ^ (c &lt;&lt; 12)) &amp; 0xFFFF
+        s = (d ^ ((d &amp; 0xFF) &lt;&lt; 5)) &amp; 0xFFFF
+    return s</code></pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Comandos verificados</h2>
+    <p class="sub">Escribir en <code>be940001</code>; las mediciones llegan por <code>be940003</code>.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Comando</th><th>Payload</th><th>Qué hace</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">0x0200</td><td class="mono">"GC"</td><td>Info del dispositivo, batería en p[5]</td><td><span class="pill ok">OK</span></td></tr>
+        <tr><td class="mono">0x0201</td><td class="mono">"GF"</td><td>Bitmap de funciones soportadas (60 B)</td><td><span class="pill ok">OK</span></td></tr>
+        <tr><td class="mono">0x0203</td><td class="mono">"GP"</td><td>Nombre interno del modelo</td><td><span class="pill ok">OK</span></td></tr>
+        <tr><td class="mono">0x0100</td><td class="mono">fecha/hora (8 B)</td><td>Sincronizar reloj</td><td><span class="pill ok">OK</span></td></tr>
+        <tr><td class="mono">0x0104</td><td class="mono">01 / 00</td><td>Activar / desactivar sensores y monitoreo automático</td><td><span class="pill ok">OK</span></td></tr>
+        <tr><td class="mono">0x030C</td><td class="mono">01 01</td><td>Preparar sensor PPG</td><td><span class="pill ok">OK</span></td></tr>
+        <tr><td class="mono">0x032F</td><td class="mono">[acción, tipo]</td><td>Iniciar (01) / detener (00) una medición</td><td><span class="pill ok">OK</span></td></tr>
+        <tr><td class="mono">0x0502–0x0509</td><td class="mono">—</td><td>Pedir historial (pasos, sueño, pulso, presión, combinado)</td><td><span class="pill wait">sin datos aún</span></td></tr>
+        <tr><td class="mono">0x0540–0x054E</td><td class="mono">—</td><td>Borrar historial: bloqueado en el cliente</td><td><span class="pill no">nunca</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Tipos de medición en vivo</h2>
+    <p class="sub">Resultado de probar <code>0x032F 01 &lt;tipo&gt;</code> uno por uno.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Tipo</th><th>Medición</th><th>Respuesta</th><th>Resultado</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">0</td><td>Pulso</td><td class="mono">0x0601 · p[0] = lpm</td><td><span class="pill ok">funciona</span></td></tr>
+        <tr><td class="mono">1</td><td>Presión arterial (estimada)</td><td class="mono">0x0603 · sis, dia, lpm</td><td><span class="pill ok">funciona</span></td></tr>
+        <tr><td class="mono">2</td><td>SpO2</td><td class="mono">0x0602 · p[0] = %</td><td><span class="pill ok">funciona</span></td></tr>
+        <tr><td class="mono">4</td><td>Temperatura</td><td class="mono">0x060A · p[12].p[13] °C</td><td><span class="pill ok">probable</span></td></tr>
+        <tr><td class="mono">3 · 5 · 6</td><td>—</td><td class="mono">rechazado (01)</td><td><span class="pill no">no soportado</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <h2>Lo que el anillo dice que puede</h2>
+        <p class="sub">Decodificado del bitmap de funciones (0x0201).</p>
+        <div class="table-wrap"><table style="min-width:0">
+          <tbody>
+            <tr><td>Pulso · SpO2 · Temperatura</td><td><span class="pill ok">sí</span></td></tr>
+            <tr><td>HRV · Estrés · Sueño · Pasos</td><td><span class="pill ok">sí</span></td></tr>
+            <tr><td>Presión arterial</td><td><span class="pill wait">estimada</span></td></tr>
+            <tr><td>Actualización de firmware (OTA)</td><td><span class="pill ok">sí</span></td></tr>
+            <tr><td>ECG · Azúcar · Respiración</td><td><span class="pill no">no</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div>
+        <h2>Lecciones</h2>
+        <p class="sub">Lo que más tiempo costó.</p>
+        <div class="table-wrap"><table style="min-width:0">
+          <tbody>
+            <tr><td><b>LED apagado = sin datos.</b> El servicio estándar de pulso envía ceros hasta activar los sensores con <code>0x0104</code>.</td></tr>
+            <tr><td><b>Windows retiene la conexión.</b> Si el anillo “desaparece”, probablemente Windows sigue conectado.</td></tr>
+            <tr><td><b>No confiar en CRC precalculados.</b> Calcularlos siempre.</td></tr>
+            <tr><td><b>Mientras carga no se anuncia.</b> Ni tampoco si el celular está conectado.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Próximos pasos</h2>
+    <ol class="steps">
+      <li><h3>Historial</h3><p>Con la hora sincronizada y el monitoreo automático activo, descargar y decodificar sueño, pasos, pulso y HRV.</p></li>
+      <li><h3>Dashboard</h3><p>Visualizar las mediciones y el historial.</p></li>
+      <li><h3>Integraciones</h3><p>Conectar con otros proyectos IoT (ESP32, asistente de voz).</p></li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Fuentes: <a href="https://codeberg.org/Freeyourgadget/Gadgetbridge/pulls/6239">Gadgetbridge PR #6239</a> ·
+    <a href="https://github.com/trasbd/SmartHealthRing">trasbd/SmartHealthRing</a> ·
+    <a href="https://github.com/auroraphtgrp01/ble-sleeping">SDK YCBT descompilado</a>.
+    Proyecto no afiliado al fabricante ni a la app SmartHealth.
+  </div>
+</footer>
+
+<script>
+(function(){
+  var root=document.documentElement, btn=document.getElementById('themeBtn'), saved=null;
+  try{saved=localStorage.getItem('theme')}catch(e){}
+  if(saved) root.setAttribute('data-theme',saved);
+  btn.addEventListener('click',function(){
+    var dark=root.getAttribute('data-theme')==='dark' || (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+    var next=dark?'light':'dark'; root.setAttribute('data-theme',next);
+    try{localStorage.setItem('theme',next)}catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

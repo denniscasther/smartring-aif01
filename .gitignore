@@ -1,0 +1,5 @@
+﻿# Datos personales y crudos del anillo (salud) - nunca subir
+private/
+__pycache__/
+*.pyc
+.venv/
