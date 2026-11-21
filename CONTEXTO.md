@@ -57,7 +57,7 @@ salud quedan **solo en el teléfono**. La página pública de GitHub sigue siend
 - Protocolo portado a `app/src/ble/ycbt.ts` con pruebas sobre paquetes reales (`npm test`).
 - Necesita APK propio (BLE nativo, no Expo Go). Compilación con EAS Build (nube), perfil `preview`.
 - Estado: código completo, typecheck + pruebas + expo-doctor OK, bundle Android OK.
-  **Falta:** login en Expo, compilar el APK, instalarlo y probarlo con el anillo.
+  APK v0.1.0 compilado en EAS (cuenta Expo `deniscasther`, proyecto `@deniscasther/smartring-aif01`, build 87a4536e). Lección: EAS usa `npm ci` (estricto); hubo que fijar `react-dom` 19.3.0. **Falta:** instalarlo y probarlo con el anillo.
 - Siguiente fase: sincronización en segundo plano.
 
 ## 5. Puntos frágiles (LEER antes de tocar)
