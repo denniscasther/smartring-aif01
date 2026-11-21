@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "SmartRing",
+    "slug": "smartring-aif01",
+    "scheme": "smartring",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.denniscasther.smartring"
+    },
+    "android": {
+      "package": "com.denniscasther.smartring",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F9D6A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "SmartRing usa Bluetooth para conectarse a tu anillo."
+        }
+      ]
+    ]
+  }
+}

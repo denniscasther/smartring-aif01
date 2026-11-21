@@ -47,6 +47,19 @@ riesgo de dejar el anillo inservible sin acceso físico al chip.
 - Sincronizar hora y activar monitoreo automático (hecho el 2026-11-21 16:44).
 - Pedir historial: el anillo responde, pero devolvió **0 registros** (ver §6).
 
+## 4b. App Android (`app/`), decidida el 2026-11-21
+
+El dueño eligió la **opción 3: app propia en el celular** como intermediario (el anillo no
+tiene internet; necesita un "puente" cerca). Ventaja: sincroniza donde esté y los datos de
+salud quedan **solo en el teléfono**. La página pública de GitHub sigue siendo técnica + batería.
+
+- Expo SDK 58 + TypeScript + Expo Router + react-native-ble-plx + expo-sqlite.
+- Protocolo portado a `app/src/ble/ycbt.ts` con pruebas sobre paquetes reales (`npm test`).
+- Necesita APK propio (BLE nativo, no Expo Go). Compilación con EAS Build (nube), perfil `preview`.
+- Estado: código completo, typecheck + pruebas + expo-doctor OK, bundle Android OK.
+  **Falta:** login en Expo, compilar el APK, instalarlo y probarlo con el anillo.
+- Siguiente fase: sincronización en segundo plano.
+
 ## 5. Puntos frágiles (LEER antes de tocar)
 
 - **Windows se queda conectado al anillo.** Con `bleak`, al terminar el script Windows a

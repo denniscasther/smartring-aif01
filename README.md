@@ -21,7 +21,8 @@ fabricante.
 | Batería / info / lista de funciones | ✅ |
 | Sincronizar hora + monitoreo automático | ✅ configurado |
 | Descarga de historial (sueño, pasos, HRV…) | ⏳ comandos listos, historial aún vacío |
-| Dashboard / página pública | ⏳ en construcción (`index.html`) |
+| Página pública (técnica + batería) | ✅ https://denniscasther.github.io/smartring-aif01/ |
+| App Android propia (`app/`) | 🔧 código listo, falta compilar e instalar el APK |
 | Firmware propio | ❌ descartado (riesgo de dejarlo inservible) |
 
 ## Estructura
