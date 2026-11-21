@@ -67,6 +67,9 @@ pre{background:var(--code);color:var(--code-text);border-radius:12px;padding:16p
 @media(min-width:820px){.cols{grid-template-columns:1fr 1fr}}
 footer{padding:32px 0 48px;color:var(--muted);font-size:14px}
 a{color:var(--accent)}
+.battery{margin-top:10px;height:10px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.battery-fill{height:100%;width:0;background:var(--accent);transition:width .6s}
+.battery-fill.low{background:var(--bad)} .battery-fill.mid{background:var(--warn)}
 .theme-btn{position:fixed;top:12px;right:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:6px 12px;font:600 12px Inter,sans-serif;cursor:pointer}
 </style>
 </head>
@@ -83,6 +86,22 @@ a{color:var(--accent)}
 </header>
 
 <main>
+<section>
+  <div class="wrap">
+    <h2>Anillo ahora</h2>
+    <p class="sub">Última lectura publicada desde la laptop.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="k">Batería</div>
+        <div class="v" id="batVal">—</div>
+        <div class="battery" aria-hidden="true"><div class="battery-fill" id="batFill"></div></div>
+      </div>
+      <div class="card"><div class="k">Actualizado</div><div class="v" id="batWhen" style="font-size:16px">—</div></div>
+      <div class="card"><div class="k">Modelo</div><div class="v" id="batModel" style="font-size:16px">—</div></div>
+    </div>
+  </div>
+</section>
+
 <section>
   <div class="wrap">
     <h2>Estado del proyecto</h2>
@@ -241,6 +260,24 @@ a{color:var(--accent)}
     var next=dark?'light':'dark'; root.setAttribute('data-theme',next);
     try{localStorage.setItem('theme',next)}catch(e){}
   });
+})();
+(function(){
+  function ago(d){
+    var s=Math.round((Date.now()-d.getTime())/1000);
+    if(s<90) return 'hace un momento';
+    var m=Math.round(s/60); if(m<90) return 'hace '+m+' min';
+    var h=Math.round(m/60); if(h<36) return 'hace '+h+' h';
+    return 'hace '+Math.round(h/24)+' días';
+  }
+  fetch('status.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(s){
+    if(!s||typeof s.bateria!=='number') return;
+    var b=Math.max(0,Math.min(100,s.bateria)), fill=document.getElementById('batFill');
+    document.getElementById('batVal').textContent=b+' %';
+    fill.style.width=b+'%'; fill.className='battery-fill'+(b<=20?' low':b<=50?' mid':'');
+    if(s.actualizado){var d=new Date(s.actualizado);
+      document.getElementById('batWhen').textContent=d.toLocaleString('es-PE',{dateStyle:'medium',timeStyle:'short'})+' · '+ago(d);}
+    if(s.modelo) document.getElementById('batModel').textContent=s.modelo;
+  }).catch(function(){});
 })();
 </script>
 </body>

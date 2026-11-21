@@ -10,6 +10,7 @@ Uso:
     python tools/ring.py config                      sincroniza hora + activa monitoreo automático
     python tools/ring.py hist                        pide historial (solo lectura)
     python tools/ring.py apagar                      detiene mediciones y desactiva sensores
+    python tools/ring.py estado                      lee batería y escribe status.json (para la página)
 
 Dirección: variable de entorno RING_ADDR o archivo private/ring_addr.txt (formato AA:BB:CC:DD:EE:FF).
 NUNCA se envían los comandos 0x0540-0x054E (borrar historial).
@@ -200,6 +201,26 @@ async def main():
             finally:
                 r.rx.rawlog.close()
             print(f"datos crudos guardados en {path}")
+        elif mode == "estado":
+            # Solo datos no sensibles: batería y hora de lectura -> status.json (público)
+            got = {}
+            orig = r.rx.handle
+            def capture(cmd, p):
+                if cmd == 0x0200 and len(p) > 5:
+                    got["bateria"] = p[5]
+                orig(cmd, p)
+            r.rx.handle = capture
+            await r.send(0x0200, b"GC", 2)
+            if "bateria" in got:
+                import json
+                out = Path(__file__).resolve().parent.parent / "status.json"
+                data = {"bateria": got["bateria"],
+                        "actualizado": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+                        "modelo": "AIF01 / SANISLINK"}
+                out.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+                print(f"status.json actualizado: {data}")
+            else:
+                print("No llegó la batería; status.json sin cambios.")
         elif mode == "apagar":
             await stop_all(r)
             await r.send(0x0104, b"\x00")

@@ -57,6 +57,8 @@ python tools\ring.py medir 2 60          # SpO2 60 s
 python tools\ring.py config              # sincroniza hora + monitoreo automático
 python tools\ring.py hist                # descarga historial (solo lectura)
 python tools\ring.py apagar              # detiene mediciones y apaga sensores
+python tools\ring.py estado              # batería -> status.json (lo muestra la página)
+powershell -File tools\publicar_estado.ps1  # lee batería y la publica en la página
 ```
 
 La dirección del anillo va en `private/ring_addr.txt` (no se sube) o en la variable
